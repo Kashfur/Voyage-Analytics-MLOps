@@ -1,23 +1,3 @@
-"""
-JourneyIQ — Flight Fare Regression Model Training
-==================================================
-Dataset : flights.csv  (271,888 rows)
-Columns : travelCode, userCode, from, to, flightType,
-          price, time, distance, agency, date
-
-Target  : price  (R$ local currency)
-Features: from, to, flightType, agency  (label-encoded)
-          time (hours), distance (km), speed_proxy (derived)
-
-All runs are logged to MLflow so you can compare experiments in the UI.
-
-Run:
-    python train_fare_model.py --data data/flights.csv
-Then open:
-    mlflow ui --backend-store-uri sqlite:///mlflow_journeyiq.db
-    → http://localhost:5000
-"""
-
 import argparse
 import os
 import logging
@@ -36,7 +16,7 @@ warnings.filterwarnings("ignore")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 log = logging.getLogger("journeyiq.train_fare")
 
-# ── XGBoost with sklearn fallback ─────────────────────────────────────────────
+#XGBoost with sklearn fallback
 try:
     from xgboost import XGBRegressor
     def get_model():
@@ -55,7 +35,7 @@ except ImportError:
         )
     MODEL_BACKEND = "GradientBoostingRegressor"
 
-# ── CLI args ──────────────────────────────────────────────────────────────────
+# CLI args
 parser = argparse.ArgumentParser()
 parser.add_argument("--data",      default="data/flights.csv")
 parser.add_argument("--test_size", type=float, default=0.20)
@@ -63,7 +43,7 @@ parser.add_argument("--cv_folds",  type=int,   default=5)
 parser.add_argument("--experiment",default="journeyiq_fare_regression")
 args = parser.parse_args()
 
-# ── Column definitions (matched to real flights.csv) ─────────────────────────
+# Column definitions
 CATEGORICAL_COLS = ["from", "to", "flightType", "agency"]
 NUMERIC_COLS     = ["time", "distance", "speed_proxy"]
 FEATURE_COLS     = CATEGORICAL_COLS + NUMERIC_COLS
@@ -86,7 +66,7 @@ def encode_categoricals(df, fit=True, encoders=None):
 
 
 def main():
-    # ── MLflow setup ──────────────────────────────────────────────────────────
+    #MLflow setup
     mlflow.set_tracking_uri("sqlite:///mlflow_journeyiq.db")
     mlflow.set_experiment(args.experiment)
 
@@ -97,7 +77,7 @@ def main():
     df = pd.read_csv(args.data)
     log.info("Raw shape: %s", df.shape)
 
-    # ── Cleaning ───────────────────────────────────────────────────────────────
+    #Cleaning
     df.dropna(subset=[TARGET_COL, "time", "distance"], inplace=True)
     df = df[(df[TARGET_COL] > 0) & (df["time"] > 0) & (df["distance"] > 0)]
     upper = df[TARGET_COL].quantile(0.99)
@@ -105,8 +85,7 @@ def main():
     n_rows = len(df)
     log.info("After cleaning: %d rows", n_rows)
 
-    # ── Feature engineering ────────────────────────────────────────────────────
-    # speed_proxy = km per hour → encodes how direct the route is
+    #Feature engineering
     df["speed_proxy"] = df["distance"] / df["time"].clip(lower=0.1)
 
     df, label_encoders = encode_categoricals(df, fit=True)
@@ -120,7 +99,7 @@ def main():
 
     model = get_model()
 
-    # ── Cross-validation ───────────────────────────────────────────────────────
+    #Cross-validation
     cv = KFold(n_splits=args.cv_folds, shuffle=True, random_state=42)
     rmse_cv = np.sqrt(-cross_val_score(
         model, X_train, y_train,
@@ -128,7 +107,7 @@ def main():
     ))
     log.info("CV RMSE scores: %s", np.round(rmse_cv, 2))
 
-    # ── Final fit ──────────────────────────────────────────────────────────────
+    #Final fit
     if MODEL_BACKEND == "XGBRegressor":
         model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
     else:
@@ -139,7 +118,7 @@ def main():
     test_mae  = float(mean_absolute_error(y_test, y_pred))
     test_r2   = float(r2_score(y_test, y_pred))
 
-    # ── MLflow logging ─────────────────────────────────────────────────────────
+    #MLflow logging
     with mlflow.start_run(run_name=f"fare_{MODEL_BACKEND}") as run:
         # Parameters
         mlflow.log_param("model_type",   MODEL_BACKEND)
@@ -185,7 +164,7 @@ def main():
         run_id = run.info.run_id
         log.info("MLflow run_id: %s", run_id)
 
-    # ── Save joblib artefacts for Flask API ────────────────────────────────────
+    #Save joblib artefacts for Flask API
     joblib.dump(model,          "models/flight_price_model.joblib")
     joblib.dump(label_encoders, "models/label_encoders.joblib")
     joblib.dump(FEATURE_COLS,   "models/fare_feature_cols.joblib")

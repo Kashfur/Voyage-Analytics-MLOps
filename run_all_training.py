@@ -1,18 +1,3 @@
-"""
-JourneyIQ — One-Click Training Runner
-======================================
-Runs all three training scripts in sequence.
-After this completes, MLflow will have 4 runs logged
-(1 fare + 2 gender candidates + 1 recommender).
-
-Usage:
-    python run_all_training.py
-
-Then view results:
-    mlflow ui --backend-store-uri sqlite:///mlflow_journeyiq.db
-    Open http://localhost:5000
-"""
-
 import subprocess
 import sys
 import os

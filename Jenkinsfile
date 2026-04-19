@@ -1,24 +1,3 @@
-/*
- * JourneyIQ — Jenkins Declarative Pipeline
- * =========================================
- * Stages:
- *   1. Checkout           → pull latest code from GitHub
- *   2. Static Analysis    → run flake8 linter and bandit security scanner
- *   3. Unit Tests         → run pytest; fail fast on any breakage
- *   4. Build Docker Image → multi-stage build tagged with Git SHA + semver
- *   5. Scan Image         → Trivy vulnerability scan (fail on HIGH/CRITICAL)
- *   6. Push to Registry   → push to Docker Hub (main branch only)
- *   7. Deploy to Staging  → kubectl apply to journeyiq-staging namespace
- *   8. Smoke Test         → hit /api/v1/health; fail if not 200 OK
- *   9. Deploy to Prod     → manual approval gate, then rolling update
- *  10. Notify             → post result to Slack #mlops-alerts
- *
- * Environment variables (set in Jenkins credential store):
- *   DOCKER_CREDENTIALS_ID  — Docker Hub username/password credential ID
- *   KUBECONFIG_CREDENTIAL  — kubeconfig file credential ID
- *   SLACK_WEBHOOK_URL       — Incoming Webhook URL for #mlops-alerts
- */
-
 pipeline {
     agent any
 
@@ -39,7 +18,7 @@ pipeline {
 
     stages {
 
-        // ── 1. Checkout ──────────────────────────────────────────────────────
+        //Checkout
         stage("Checkout") {
             steps {
                 checkout scm
@@ -53,7 +32,7 @@ pipeline {
             }
         }
 
-        // ── 2. Static Analysis ───────────────────────────────────────────────
+        //Static Analysis
         stage("Static Analysis") {
             parallel {
                 stage("Lint") {
@@ -80,7 +59,7 @@ pipeline {
             }
         }
 
-        // ── 3. Unit Tests ────────────────────────────────────────────────────
+        //Unit Tests
         stage("Unit Tests") {
             steps {
                 sh """
@@ -98,7 +77,7 @@ pipeline {
             }
         }
 
-        // ── 4. Build Docker Image ────────────────────────────────────────────
+        //Build Docker Image
         stage("Build Docker Image") {
             steps {
                 script {
@@ -114,7 +93,7 @@ pipeline {
             }
         }
 
-        // ── 5. Container Vulnerability Scan ─────────────────────────────────
+        //Container Vulnerability Scan
         stage("Scan Image (Trivy)") {
             steps {
                 sh """
@@ -129,7 +108,7 @@ pipeline {
             }
         }
 
-        // ── 6. Push to Registry (main branch only) ───────────────────────────
+        //Push to Registry
         stage("Push to Registry") {
             when { branch "main" }
             steps {
@@ -144,7 +123,7 @@ pipeline {
             }
         }
 
-        // ── 7. Deploy to Staging ─────────────────────────────────────────────
+        //Deploy to Staging
         stage("Deploy to Staging") {
             when { branch "main" }
             steps {
@@ -161,7 +140,7 @@ pipeline {
             }
         }
 
-        // ── 8. Smoke Test ────────────────────────────────────────────────────
+        //Smoke Test
         stage("Smoke Test (Staging)") {
             when { branch "main" }
             steps {
@@ -179,7 +158,7 @@ pipeline {
             }
         }
 
-        // ── 9. Deploy to Production (manual gate) ────────────────────────────
+        //Deploy to Production
         stage("Deploy to Production") {
             when { branch "main" }
             input {
@@ -211,7 +190,7 @@ pipeline {
         }
     }
 
-    // ── Post-actions ─────────────────────────────────────────────────────────
+    //Post-actions
     post {
         always {
             cleanWs()

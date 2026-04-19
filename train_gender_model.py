@@ -1,22 +1,3 @@
-"""
-JourneyIQ — Traveller Gender Classification Model
-==================================================
-Dataset : users.csv  (1,340 rows)
-Columns : code, company, name, gender, age
-
-Target  : gender  (male | female) — 'none' rows excluded
-Features: age (int), company_code (label-encoded, 5 classes)
-
-Trains two candidates (Random Forest vs Gradient Boosting),
-logs BOTH to MLflow, and saves the winner.
-
-Run:
-    python train_gender_model.py --data data/users.csv
-Then open:
-    mlflow ui --backend-store-uri sqlite:///mlflow_journeyiq.db
-    → http://localhost:5000
-"""
-
 import argparse
 import os
 import logging
@@ -46,7 +27,7 @@ FEATURE_COLS = ["age", "company_code"]
 
 
 def main():
-    # ── MLflow setup ──────────────────────────────────────────────────────────
+    #MLflow setup
     mlflow.set_tracking_uri("sqlite:///mlflow_journeyiq.db")
     mlflow.set_experiment(args.experiment)
 
@@ -58,7 +39,7 @@ def main():
     df = df[df["gender"].str.strip().str.lower() != "none"].copy()
     log.info("After removing 'none': %d rows", len(df))
 
-    # ── Encoding ───────────────────────────────────────────────────────────────
+    #Encoding
     le_company = LabelEncoder()
     df["company_code"] = le_company.fit_transform(
         df["company"].astype(str).str.strip()
@@ -76,7 +57,7 @@ def main():
         X, y, test_size=0.20, stratify=y, random_state=7
     )
 
-    # ── Two candidate models ───────────────────────────────────────────────────
+    #Two candidate models
     candidates = {
         "RandomForest": RandomForestClassifier(
             n_estimators=300, max_depth=8,
@@ -154,7 +135,7 @@ def main():
 
     log.info("Best model: %s (F1=%.4f)", best_name, best_f1)
 
-    # ── Save artefacts ─────────────────────────────────────────────────────────
+    #Save artefacts
     os.makedirs("models", exist_ok=True)
     joblib.dump(best_model,   "models/gender_clf_model.joblib")
     joblib.dump(le_gender,    "models/gender_label_encoder.joblib")

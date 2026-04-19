@@ -1,0 +1,21 @@
+artifact_path: fare_regression_model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.7
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+mlflow_version: 2.22.4
+model_size_bytes: 801879
+model_uuid: e9dc29941ea9439c80cb8c9a132dc309
+prompts: null
+run_id: 38dfca830410437a936fe6e407c9e97c
+utc_time_created: '2026-04-18 12:50:47.631265'

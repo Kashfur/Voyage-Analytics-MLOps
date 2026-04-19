@@ -1,0 +1,21 @@
+artifact_path: gender_model_RandomForest
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.7
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+mlflow_version: 2.22.4
+model_size_bytes: 4031295
+model_uuid: a3dd8291455d481baf30b44c767efeff
+prompts: null
+run_id: 48c63ee4df2b406498fcf59b70f941a1
+utc_time_created: '2026-04-18 12:51:11.511189'

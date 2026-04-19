@@ -1,0 +1,200 @@
+# ──────────────────────────────────────────────────────────────────
+# JourneyIQ — Kubernetes Deployment Manifest
+# ──────────────────────────────────────────────────────────────────
+# Applies:
+#   - Namespace isolation
+#   - Deployment (3 replicas for HA)
+#   - HorizontalPodAutoscaler (scales 3 → 10 on CPU)
+#   - ClusterIP Service (internal) + LoadBalancer Service (external)
+#   - ConfigMap for non-secret environment variables
+#
+# Apply with:
+#   kubectl apply -f deployment.yaml
+# ──────────────────────────────────────────────────────────────────
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: journeyiq
+  labels:
+    project: journeyiq
+    managed-by: kubectl
+
+---
+# ConfigMap — non-sensitive runtime configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: journeyiq-config
+  namespace: journeyiq
+data:
+  PORT:           "5050"
+  MODEL_VERSION:  "v1.0"
+  LOG_LEVEL:      "INFO"
+
+---
+# Deployment — manages the pod replica set
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: journeyiq-fare-api
+  namespace: journeyiq
+  labels:
+    app: journeyiq-fare-api
+    version: "1.0"
+    component: api
+spec:
+  replicas: 3                       # 3 replicas for high availability
+  selector:
+    matchLabels:
+      app: journeyiq-fare-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                   # allow 1 extra pod during update
+      maxUnavailable: 0             # never drop below 3 running pods
+  template:
+    metadata:
+      labels:
+        app: journeyiq-fare-api
+        version: "1.0"
+    spec:
+      # Graceful shutdown — give the app 30s to finish in-flight requests
+      terminationGracePeriodSeconds: 30
+
+      containers:
+        - name: fare-api
+          image: journeyiq/fare-api:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5050
+              name: http
+              protocol: TCP
+
+          # Environment from ConfigMap
+          envFrom:
+            - configMapRef:
+                name: journeyiq-config
+
+          # Resource requests/limits prevent noisy-neighbour problems
+          resources:
+            requests:
+              cpu:    "250m"
+              memory: "512Mi"
+            limits:
+              cpu:    "1000m"
+              memory: "1Gi"
+
+          # Liveness probe — restart pod if API stops responding
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 5050
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 3
+
+          # Readiness probe — only route traffic once the model is loaded
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 5050
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 2
+
+          # Model files mounted from a PersistentVolume (not baked into image)
+          # — this allows model updates without rebuilding the Docker image
+          volumeMounts:
+            - name: model-storage
+              mountPath: /app/models
+              readOnly: true
+
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: journeyiq-model-pvc
+
+---
+# Horizontal Pod Autoscaler — scales based on CPU utilisation
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: journeyiq-fare-api-hpa
+  namespace: journeyiq
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: journeyiq-fare-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65    # scale up when avg CPU > 65%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+
+---
+# ClusterIP Service — internal access within the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: journeyiq-fare-api-internal
+  namespace: journeyiq
+  labels:
+    app: journeyiq-fare-api
+spec:
+  type: ClusterIP
+  selector:
+    app: journeyiq-fare-api
+  ports:
+    - port: 80
+      targetPort: 5050
+      protocol: TCP
+      name: http
+
+---
+# LoadBalancer Service — external traffic entry point
+apiVersion: v1
+kind: Service
+metadata:
+  name: journeyiq-fare-api-external
+  namespace: journeyiq
+  annotations:
+    # Cloud-provider-specific annotation (AWS example)
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  labels:
+    app: journeyiq-fare-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: journeyiq-fare-api
+  ports:
+    - port: 80
+      targetPort: 5050
+      protocol: TCP
+      name: http
+
+---
+# PersistentVolumeClaim — shared storage for model artefacts
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: journeyiq-model-pvc
+  namespace: journeyiq
+spec:
+  accessModes:
+    - ReadOnlyMany              # multiple pods can read simultaneously
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard

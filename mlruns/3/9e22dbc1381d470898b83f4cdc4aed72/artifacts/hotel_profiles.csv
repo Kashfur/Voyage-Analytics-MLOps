@@ -1,0 +1,10 @@
+name,place,avg_price,avg_days,booking_count,total_revenue,price_tier_text,combined_text
+Hotel A,Florianopolis (SC),313.02,2.483183183183183,3330,2588362.38,luxury expensive high-end exclusive,hotel a florianopolis (sc) florianopolis (sc) luxury expensive high-end exclusive stay 2 nights
+Hotel AF,Sao Paulo (SP),139.1,2.511599005799503,4828,1686726.5999999999,mid-range moderate comfortable,hotel af sao paulo (sp) sao paulo (sp) mid-range moderate comfortable stay 3 nights
+Hotel AU,Recife (PE),312.83,2.5209312737855383,4467,3522778.63,luxury expensive high-end exclusive,hotel au recife (pe) recife (pe) luxury expensive high-end exclusive stay 3 nights
+Hotel BD,Natal (RN),242.88,2.499068130047629,4829,2931075.84,premium comfortable upscale,hotel bd natal (rn) natal (rn) premium comfortable upscale stay 2 nights
+Hotel BP,Brasilia (DF),247.61999999999998,2.4863646608068515,4437,2731743.84,premium comfortable upscale,hotel bp brasilia (df) brasilia (df) premium comfortable upscale stay 2 nights
+Hotel BW,Campo Grande (MS),60.39,2.4954996538195244,4333,652997.07,budget affordable cheap economy,hotel bw campo grande (ms) campo grande (ms) budget affordable cheap economy stay 2 nights
+Hotel CB,Rio de Janeiro (RJ),165.99,2.485981308411215,5029,2075206.9800000002,mid-range moderate comfortable,hotel cb rio de janeiro (rj) rio de janeiro (rj) mid-range moderate comfortable stay 2 nights
+Hotel K,Salvador (BH),263.41,2.516489988221437,5094,3376652.79,premium comfortable upscale,hotel k salvador (bh) salvador (bh) premium comfortable upscale stay 3 nights
+Hotel Z,Aracaju (SE),208.04,2.4915576694411414,4205,2179635.08,premium comfortable upscale,hotel z aracaju (se) aracaju (se) premium comfortable upscale stay 2 nights

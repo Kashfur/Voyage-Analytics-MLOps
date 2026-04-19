@@ -1,17 +1,3 @@
-# ──────────────────────────────────────────────────────────────────
-# JourneyIQ — Kubernetes Deployment Manifest
-# ──────────────────────────────────────────────────────────────────
-# Applies:
-#   - Namespace isolation
-#   - Deployment (3 replicas for HA)
-#   - HorizontalPodAutoscaler (scales 3 → 10 on CPU)
-#   - ClusterIP Service (internal) + LoadBalancer Service (external)
-#   - ConfigMap for non-secret environment variables
-#
-# Apply with:
-#   kubectl apply -f deployment.yaml
-# ──────────────────────────────────────────────────────────────────
-
 apiVersion: v1
 kind: Namespace
 metadata:

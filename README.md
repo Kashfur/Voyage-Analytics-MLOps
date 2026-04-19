@@ -1,4 +1,4 @@
-# ✈️ JourneyIQ — Intelligent Travel Analytics Platform
+# ✈️Intelligent Travel Analytics Platform
 
 ## Table of Contents
 
